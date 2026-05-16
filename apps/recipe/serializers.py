@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import Product
-from apps.google_drive.google_cloud import upload_file_to_drive
+from apps.google_drive.google_cloud import upload_file_to_drive,delete_file_from_drive
 
 def clean_name(name):
     return name.replace(" ", "_").lower()
@@ -34,3 +34,49 @@ class ProductSerializer(serializers.ModelSerializer):
         product.save()
 
         return product
+    
+    def update(self, instance, validated_data):
+
+        request = self.context.get("request")
+        files = request.FILES.getlist("image")
+
+        # update normal fields
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        # if new images uploaded
+        if files:
+
+            # delete old images
+            if instance.image:
+
+                for old_image in instance.image:
+
+                    file_id = old_image.get("file_id")
+
+                    if file_id:
+                        delete_file_from_drive(file_id)
+
+            uploaded_images = []
+
+            folder_name = (
+                f"{clean_name(instance.name)}"
+                f"_{instance.productid}"
+            )
+
+            # upload new images
+            for file in files:
+
+                uploaded = upload_file_to_drive(
+                    file,
+                    folder_name
+                )
+
+                uploaded_images.append(uploaded)
+
+            # replace images
+            instance.image = uploaded_images
+
+        instance.save()
+
+        return instance

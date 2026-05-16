@@ -227,3 +227,25 @@ def upload_file_to_drive(file, folder_name):
         "file_id": file_id,
         "url": f"https://drive.google.com/file/d/{file_id}/view"
     }
+
+# ✅ Delete file from Google Drive
+def delete_file_from_drive(file_id):
+
+    try:
+        creds = get_owner_credentials()
+
+        service = build(
+            'drive',
+            'v3',
+            credentials=creds
+        )
+
+        service.files().delete(
+            fileId=file_id
+        ).execute()
+
+        return True
+
+    except Exception as e:
+        print("Delete Error:", str(e))
+        return False
