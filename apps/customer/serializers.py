@@ -8,9 +8,13 @@ def clean_name(name):
     return name.replace(" ", "_").lower()
 
 class CustomerSerializer(serializers.ModelSerializer):
-    username=serializers.CharField()
-    email=serializers.CharField()
-    otp = serializers.CharField(write_only=True)
+    username = serializers.CharField(
+    source='user.username'
+)
+
+    email = serializers.EmailField(
+    source='user.email'
+)
     password=serializers.CharField(write_only=True)
     confirm_password=serializers.CharField(write_only=True)
     profile_picture = serializers.ListField(
@@ -26,17 +30,20 @@ class CustomerSerializer(serializers.ModelSerializer):
         if attrs['password']!=attrs['confirm_password']:
             raise serializers.ValidationError("password and confirm password does not match")
         
-        mobile = attrs.get("mobile")
-        otp = attrs.get("otp")
+        user_data = attrs.get("user")
 
-        otp_obj = CustomerOTP.objects.filter(
-            mobile=mobile,
-            otp=otp
-        ).last()
+        email = user_data.get("email")
+        username = user_data.get("username")
 
-        if not otp_obj:
+
+        if User.objects.filter(email=email).exists():
             raise serializers.ValidationError(
-                "Invalid OTP"
+                "Email already exists"
+            )
+        
+        if User.objects.filter(username=username).exists():
+            raise serializers.ValidationError(
+                "Username already exists"
             )
 
         return attrs
@@ -47,9 +54,10 @@ class CustomerSerializer(serializers.ModelSerializer):
         validated_data.pop('confirm_password')
 
         password = validated_data.pop('password')
-        username = validated_data.pop('username')
-        email = validated_data.pop('email')
-        validated_data.pop('otp')
+        user_data = validated_data.pop('user')
+
+        username = user_data.get('username')
+        email = user_data.get('email')
 
         # create Django auth user
         with transaction.atomic():
@@ -74,8 +82,5 @@ class CustomerSerializer(serializers.ModelSerializer):
 
                 app_customer.profile_picture = pictures
                 app_customer.save()
-            CustomerOTP.objects.filter(
-                mobile=app_customer.mobile
-            ).delete()
 
             return app_customer

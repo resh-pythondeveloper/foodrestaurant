@@ -16,7 +16,7 @@ def send_otp_mobile(mobile, otp):
     }
 
     headers = {
-        "authorization": "YOUR_FAST2SMS_API_KEY"
+        "authorization": "Hf5UXTShYyzeoLwBktcaM67ZqKl3DPE1IjJ4RWCsFOgn0Gi2dbtegp0vdMNQu3fH98TV4mJwGZ7zWFXS"
     }
 
     response = requests.post(

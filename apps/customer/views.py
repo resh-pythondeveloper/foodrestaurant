@@ -6,38 +6,97 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Customer,CustomerOTP
 from .serializers import CustomerSerializer
 from rest_framework import status
-from utils.otp import generate_otp,send_otp_mobile
-
+from utils.otp import generate_otp
+from django.core.mail import send_mail
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth.models import User
+from django.conf import settings
 
 class SendOTPView(APIView):
 
     def post(self, request):
 
-        mobile = request.data.get("mobile")
+        email = request.data.get("email")
 
-        if not mobile:
+        if not email:
             return Response(
-                {"error": "Mobile number required"},
+                {"error": "Email required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+        
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {"error":"Email already registered"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        CustomerOTP.objects.filter(
+            email=email).delete()
 
         otp = generate_otp()
 
         CustomerOTP.objects.create(
-            mobile=mobile,
+            email=email,
             otp=str(otp)
         )
-
-        send_otp_mobile(mobile, otp)
+        send_mail(
+            subject="Your OTP",
+            message=f"Your OTP is {otp}",
+            from_email=settings.EMAIL_HOST_USER,
+            recipient_list=[email],
+            fail_silently=False
+        )
 
         return Response(
             {"message": "OTP sent successfully"},
             status=status.HTTP_200_OK
         )
     
+class VerifyOTPView(APIView):
+
+    def post(self, request):
+
+        email = request.data.get("email")
+        otp = request.data.get("otp")
+
+        otp_obj = CustomerOTP.objects.filter(
+            email=email,
+            otp=otp
+        ).last()
+
+        if not otp_obj:
+            return Response(
+                {"error":"Invalid OTP"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if otp_obj.created_at < timezone.now() - timedelta(minutes=5):
+            return Response({"error":"OTP expired"},status=status.HTTP_400_BAD_REQUEST)
+
+        otp_obj.is_verified = True
+        otp_obj.save()
+
+        return Response(
+            {"message":"OTP verified successfully"},
+            status=status.HTTP_200_OK
+        )
+    
 class CustomerRegisterView(APIView):
     def post(self,request):
         try:
+            email = request.data.get("email")
+
+            otp_obj = CustomerOTP.objects.filter(
+                email=email,
+                is_verified=True
+            ).last()
+
+            if not otp_obj:
+                return Response(
+                    {"error":"Email not verified"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
             serializer = CustomerSerializer(
                 data=request.data,
@@ -46,7 +105,8 @@ class CustomerRegisterView(APIView):
 
             if serializer.is_valid():
 
-                customer = serializer.save()
+                serializer.save()
+                otp_obj.delete()
 
                 return Response(
                     {
@@ -66,5 +126,4 @@ class CustomerRegisterView(APIView):
 
             return Response(
                 {"error": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
