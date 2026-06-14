@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'apps.recipe',
     'apps.user',
     'apps.google_drive',
+    'apps.cart',
+    'apps.order'
 ]
 
 MIDDLEWARE = [
