@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import Customer,CustomerOTP
-from .serializers import CustomerSerializer
+from .serializers import CustomerSerializer,CustomerLoginserializer
 from rest_framework import status
 from utils.otp import generate_otp
 from django.core.mail import send_mail
@@ -127,3 +127,54 @@ class CustomerRegisterView(APIView):
             return Response(
                 {"error": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class CustomerLoginView(APIView):
+    def post(self, request):
+        serializer = CustomerLoginserializer(data=request.data)
+
+        if serializer.is_valid():
+            email = serializer.validated_data["email"]
+            password = serializer.validated_data["password"]
+
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response(
+                    {"error": "Invalid email or password"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            try:
+                customer = Customer.objects.get(user=user)
+            except Customer.DoesNotExist:
+                return Response(
+                    {"error": "Customer account not found"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            if user.check_password(password):
+                token = RefreshToken.for_user(user)
+
+                return Response(
+                    {
+                        "access_token": str(token.access_token),
+                        "refresh_token": str(token),
+                        "user": {
+                            "id": user.id,
+                            "username": user.username,
+                            "email": user.email
+                        }
+                    },
+                    status=status.HTTP_200_OK
+                )
+
+            return Response(
+                {"error": "Invalid email or password"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )

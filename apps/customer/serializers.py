@@ -84,3 +84,7 @@ class CustomerSerializer(serializers.ModelSerializer):
                 app_customer.save()
 
             return app_customer
+
+class CustomerLoginserializer(serializers.Serializer):
+    email=serializers.CharField()
+    password=serializers.CharField()

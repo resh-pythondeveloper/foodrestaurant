@@ -22,5 +22,7 @@ urlpatterns = [
     path('customer/',include('apps.customer.urls')),
     path('recipe/',include('apps.recipe.urls')),
     path('user/',include('apps.user.urls')),
-    path('google/',include('apps.google_drive.urls'))
+    path('google/',include('apps.google_drive.urls')),
+    path('payment/',include('apps.paymentsetting.urls')),
+    path('cart/',include('apps.cart.urls')),
 ]

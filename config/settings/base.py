@@ -39,7 +39,8 @@ INSTALLED_APPS = [
     'apps.user',
     'apps.google_drive',
     'apps.cart',
-    'apps.order'
+    'apps.order',
+    'apps.paymentsetting'
 ]
 
 MIDDLEWARE = [
