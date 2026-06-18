@@ -66,9 +66,17 @@ class CartView(APIView):
 
         cart, created = Cart.objects.get_or_create(customer=customer)
 
-        cart_item=CartItem.objects.filter(cart=cart).order_by("id")
-        serializer=CartItemSerializer(cart_item,many=True)
-        return Response(serializer.data,status=status.HTTP_200_OK)
+        cart_items=CartItem.objects.filter(cart=cart)
+        serializer=CartItemSerializer(cart_items,many=True)
+        # total_amount = sum(
+        #     item.product.price * item.quantity
+        #     for item in cart_items
+        # )
+        total_amount=cart.total_price
+        return Response({
+            "cart_items": serializer.data,
+            "total_amount": total_amount
+        },status=status.HTTP_200_OK)
     
     def patch(self,request,id):
         try:

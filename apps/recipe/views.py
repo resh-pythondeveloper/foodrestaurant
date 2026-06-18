@@ -64,6 +64,13 @@ class ProductView(APIView):
             return Response(serializer.data,status=status.HTTP_200_OK)
         
         products=Product.objects.all().order_by("id")
+        # Search
+        search = request.GET.get("search")
+        if search:
+            products = products.filter(
+                name__icontains=search
+            )
+
         paginator = ProductPagination()
         paginated_products = paginator.paginate_queryset(
             products,
@@ -167,6 +174,13 @@ class SessionWiseProductView(APIView):
 
         else:
             products = Product.objects.none()
+            # Search
+        search = request.GET.get("search")
+        if search:
+            products = products.filter(
+                name__icontains=search
+            )
+
 
         paginator = ProductPagination()
 
