@@ -9,8 +9,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 env_path = BASE_DIR / "env" / "env_base"
 if env_path.exists():
     load_dotenv(dotenv_path=env_path)
-else:
-    raise FileNotFoundError(f".env_base file not found at {env_path}")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
