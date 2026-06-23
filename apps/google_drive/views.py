@@ -21,7 +21,7 @@ class GoogleLoginAPIView(APIView):
         request.session.pop("oauth_state", None)
 
         url = get_google_auth_url(request)
-        return Response({"url":url},status=status.HTTP_200_OK)
+        return redirect(url)
 
 class GoogleCallbackAPIView(APIView):
     def get(self, request):

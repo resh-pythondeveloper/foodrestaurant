@@ -40,6 +40,10 @@ def get_google_auth_url(request):
 
     # ✅ ONLY THIS
     request.session['oauth_state'] = state
+    request.session.save()
+
+    print("Saved State:", state)
+    print("Session Key:", request.session.session_key)
 
     return auth_url
 
@@ -47,8 +51,10 @@ def get_credentials_from_code(request):
     session_state = request.session.get('oauth_state')
     request_state = request.GET.get('state')
 
-    print("SESSION STATE:", session_state)
-    print("REQUEST STATE:", request_state)
+    # print("SESSION STATE:", session_state)
+    # print("REQUEST STATE:", request_state)
+    # print("Callback Session Key:", request.session.session_key)
+    # print("Session Contents:", dict(request.session))
 
     if not session_state:
         raise Exception("State missing from session")
@@ -64,6 +70,8 @@ def get_credentials_from_code(request):
     )
 
     creds = flow.credentials
+    request.session.pop("oauth_state", None)
+
 
     return {
         "token": creds.token,
